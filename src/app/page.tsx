@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '@/components/Sidebar';
 import Dashboard from '@/components/Dashboard';
@@ -8,34 +8,61 @@ import PortfolioView from '@/components/PortfolioView';
 import TxList from '@/components/TxList';
 import ChatPanel from '@/components/ChatPanel';
 import WalletButton from '@/components/WalletButton';
-import { X } from 'lucide-react';
+import { Zap } from 'lucide-react';
+
+const PAGE_TITLES: Record<string, string> = {
+  dashboard:    'Dashboard',
+  portfolio:    'Portfolio',
+  transactions: 'Activity',
+  chat:         'AI Agent',
+};
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [chatOpen, setChatOpen] = useState(false);
+
+  // Keyboard shortcut: Cmd/Ctrl+K → go to chat
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setActiveTab('chat');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard onOpenChat={() => { setActiveTab('chat'); }} />;
+        return <Dashboard onOpenChat={() => setActiveTab('chat')} />;
       case 'portfolio':
         return (
-          <div className="space-y-4">
-            <h1 className="text-2xl font-bold gradient-text">Portfolio</h1>
+          <div className="space-y-5">
+            <div>
+              <h1 className="text-[26px] font-bold gradient-text tracking-tight">Portfolio</h1>
+              <p className="text-sm text-flux-muted mt-1">All token holdings on Base Mainnet</p>
+            </div>
             <PortfolioView />
           </div>
         );
       case 'transactions':
         return (
-          <div className="space-y-4">
-            <h1 className="text-2xl font-bold gradient-text">Activity</h1>
+          <div className="space-y-5">
+            <div>
+              <h1 className="text-[26px] font-bold gradient-text tracking-tight">Activity</h1>
+              <p className="text-sm text-flux-muted mt-1">Transaction history on Base Mainnet</p>
+            </div>
             <TxList />
           </div>
         );
       case 'chat':
         return (
-          <div className="h-full flex flex-col">
-            <h1 className="text-2xl font-bold gradient-text mb-4 flex-shrink-0">AI Agent</h1>
+          <div className="h-full flex flex-col gap-4">
+            <div className="flex-shrink-0">
+              <h1 className="text-[26px] font-bold gradient-text tracking-tight">AI Agent</h1>
+              <p className="text-sm text-flux-muted mt-1">Powered by Claude · Base MCP · Natural language wallet queries</p>
+            </div>
             <div className="flex-1 min-h-0">
               <ChatPanel />
             </div>
@@ -47,38 +74,60 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden dot-grid">
-      {/* Ambient glow */}
-      <div className="fixed top-0 left-64 right-0 h-px bg-gradient-to-r from-flux-blue/60 via-flux-blue/20 to-transparent pointer-events-none" />
-      <div className="fixed top-20 left-1/3 w-96 h-96 bg-flux-blue/6 rounded-full blur-3xl pointer-events-none" />
+    <div className="flex h-screen overflow-hidden app-bg dot-grid">
+
+      {/* Ambient glows */}
+      <div className="fixed top-0 left-0 w-80 h-80 rounded-full bg-flux-blue/8 blur-3xl pointer-events-none -translate-x-1/2 -translate-y-1/2" />
+      <div className="fixed bottom-0 right-0 w-96 h-96 rounded-full bg-purple-600/5 blur-3xl pointer-events-none translate-x-1/3 translate-y-1/3" />
+      <div className="fixed top-1/2 left-64 right-0 h-px bg-gradient-to-r from-flux-blue/20 via-transparent to-transparent pointer-events-none" style={{ top: 0 }} />
 
       {/* Sidebar */}
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* Main area */}
+      {/* Main */}
       <div className="flex-1 ml-64 flex flex-col overflow-hidden">
+
         {/* Top bar */}
-        <header className="flex items-center justify-between px-8 py-4 border-b border-flux-blue-border bg-flux-bg/80 backdrop-blur-sm sticky top-0 z-20">
-          <div className="flex items-center gap-3">
+        <header className="flex items-center justify-between px-7 py-3.5 border-b border-white/5 flex-shrink-0"
+          style={{ background: 'rgba(5,10,20,0.7)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+        >
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2.5">
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-flux-success status-dot" />
-              <span className="text-[11px] text-flux-muted">Live</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-flux-success status-dot" />
+              <span className="text-[11px] text-flux-muted font-medium">Live</span>
             </div>
-            <span className="text-flux-blue-border">|</span>
-            <span className="text-[11px] text-flux-muted capitalize">{activeTab}</span>
+            <span className="text-white/15 text-sm">/</span>
+            <span className="text-[12px] text-flux-text font-medium">{PAGE_TITLES[activeTab]}</span>
           </div>
-          <WalletButton />
+
+          {/* Right: keyboard hint + wallet */}
+          <div className="flex items-center gap-3">
+            {activeTab !== 'chat' && (
+              <button
+                onClick={() => setActiveTab('chat')}
+                className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/8 text-flux-muted hover:text-flux-text hover:border-white/15 text-[11px] transition-all group"
+              >
+                <Zap size={11} className="text-flux-blue-light" />
+                AI Chat
+                <kbd className="ml-1 text-[9px] bg-white/6 border border-white/10 px-1.5 py-0.5 rounded-md font-mono opacity-60 group-hover:opacity-100 transition-opacity">
+                  ⌘K
+                </kbd>
+              </button>
+            )}
+            <WalletButton />
+          </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto px-8 py-6">
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto px-7 py-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
               className={activeTab === 'chat' ? 'h-full flex flex-col' : ''}
             >
               {renderContent()}
@@ -86,36 +135,6 @@ export default function Home() {
           </AnimatePresence>
         </main>
       </div>
-
-      {/* Floating chat panel (from Dashboard "Ask AI" button) */}
-      <AnimatePresence>
-        {chatOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-              onClick={() => setChatOpen(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 40 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed right-6 top-6 bottom-6 w-[420px] z-50 flex flex-col"
-            >
-              <button
-                onClick={() => setChatOpen(false)}
-                className="absolute -left-10 top-3 p-2 rounded-lg bg-flux-card border border-flux-blue-border text-flux-muted hover:text-flux-text transition-colors"
-              >
-                <X size={14} />
-              </button>
-              <ChatPanel />
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
